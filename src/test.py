@@ -62,7 +62,7 @@ foodTable.insert(
 # retrieve something from the db
 foods: list[food] = foodTable.get(
     searchParameters = food(name = "Rice", description = "h"), # search for food with the name "Rice" and description "h"
-    fetchHowMany = -1 # -1 = get all results, 1 = get a singular result (not in a list), 2+ = get x results (in a list)
+    fetchAmount = -1 # -1 = get all results, 1 = get a singular result (not in a list), 2+ = get x results (in a list)
 )
 
 # retrieve everything from the db
