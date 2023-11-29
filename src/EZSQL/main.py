@@ -80,7 +80,7 @@ class EZSQL():
         whereQueryPart = "" # "SELECT FROM _ WHERE {fromQueryPart}"
         count = 0
         
-        for name, value in searchParams.items():
+        for name, value in newSearchParams.items():
             if value is None:
                 continue
             
@@ -177,4 +177,4 @@ class EZSQL():
         whereQuery, values = self.__where(searchParameters)
         
         # execute
-        self.__execute(f"DELETE OR IGNORE FROM {tableName} WHERE {whereQuery}", True, *values)
+        self.__execute(f"DELETE FROM {tableName} WHERE {whereQuery}", True, *values)
