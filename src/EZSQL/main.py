@@ -2,6 +2,9 @@
 # // ------- [EZSQL] EZSQL Main
 # // ---------------------------------------------------------------------
 
+# todo: "__WHERE" helper method for setting up the "WHERE" part of a SQL query
+#       will be handy for future "remove" method, and will be handy to clean up "get" method 
+
 # // ---- Imports
 import os
 import sqlite3
