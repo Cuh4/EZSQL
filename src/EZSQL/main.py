@@ -44,10 +44,6 @@ class table():
     
     def removeAll(self):
         return self.parent.removeAll(self)
-    
-    # // magic methods
-    def __del__(self):
-        return self.removeTable()
 
 # // Column Class
 class column():
@@ -84,8 +80,6 @@ class EZSQL():
         return self.database.cursor()
         
     def __execute(self, query: str, shouldCommit: bool = False, *params: str): 
-        print(query, params, sep = " | ")
-        
         # get cursor
         cursor = self.__cursor()
         
