@@ -129,9 +129,9 @@ class EZSQL():
     def removeTable(self, tableName: str):
         self.__execute(f"DROP TABLE {tableName}", True)
         
-    def insert(self, tableName: str, obj: object):
+    def insert(self, tableName: str, value: object):
         # get values
-        objVars, _ = helpers.listClassAttributes(obj)
+        objVars, _ = helpers.listClassAttributes(value)
         names, values = self.__getKeysAndValuesOfDict(objVars)
         
         # format stuffs
