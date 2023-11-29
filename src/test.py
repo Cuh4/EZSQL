@@ -89,3 +89,4 @@ foodTable.removeAll()
 # remove table after another 5 seconds
 time.sleep(5)
 foodTable.removeTable()
+# or del foodTable
