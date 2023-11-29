@@ -6,24 +6,40 @@
 import os
 import sqlite3
 import pathlib
+import typing
 
 from . import helpers
 
 # // ---- Variables
-datatypes = {
-    str : "TEXT",
-    int : "INTEGER",
-    float : "REAL"
-}
+class dataTypes():
+    stringType = "TEXT"
+    integerType = "INTEGER"
+    floatType = "REAL"
 
 # // ---- Classes
+# // Table Class
+class table():
+    def __init__(self, name: str, columns: list["table"], valueObj: object):
+        self.name = name
+        self.columns = columns
+        self.valueObject = valueObj
+
+# // Column Class
+class column():
+    def __init__(self, type: str, default: typing.Any, isPrimary: bool = False):
+        self.type = type
+        self.default = default
+        self.isPrimary = isPrimary
+
+# // Main EZSQL Class
+# Represented as "database" in the package __init__
 class EZSQL():
     # // setup
     def __init__(self, databasePath: str, timeout: float|int = 60):
         # set attributes
         self.folderPath = os.path.split(databasePath)[0]
         self.databasePath = databasePath
-        self.tables = {}
+        self.tables: dict[str, "table"] = {}
         
         # make sure path exists
         pathlib.Path(self.folderPath).mkdir(
@@ -42,6 +58,8 @@ class EZSQL():
         return self.database.cursor()
         
     def __execute(self, query: str, shouldCommit: bool = False, *params: str): 
+        print(query, params, sep = " | ")
+        
         # get cursor
         cursor = self.__cursor()
         
@@ -58,12 +76,12 @@ class EZSQL():
     def __getKeysAndValuesOfDict(self, inputDict: dict):
         return list(inputDict.keys()), list(inputDict.values())
     
-    def __resultToValue(self, result: list, value: object) -> object:
-        return value(*result)
+    def __resultToValue(self, result: list, table: "table") -> object:
+        return table.valueObject(*result)
     
-    def __where(self, searchParams: object):
+    def __where(self, searchParams: object) -> tuple[str, list[str]]:
         # get attributes
-        attributes, _ = helpers.listClassAttributes(searchParams)
+        attributes = helpers.listClassAttributes(searchParams)
         newSearchParams = {}
         
         # filter out search params (removing values that are none)
@@ -98,9 +116,9 @@ class EZSQL():
         return whereQueryPart, values
         
     # // main
-    def createTable(self, tableName: str, table: object):
+    def createTable(self, tableName: str, tableObj: object) -> "table":
         # get columns of table
-        columns, primaryColumn = helpers.listClassAttributes(table)
+        columns: dict[str, "column"] = helpers.listClassAttributes(tableObj)
         queryColumns = ""
         
         # format columns into query string
@@ -113,23 +131,36 @@ class EZSQL():
             endingComma = ", " if count < len(columns) else ""
             
             # set primary key if this is the primary column
-            primaryKey = "PRIMARY KEY" if primaryColumn == name else ""
+            primaryKey = "PRIMARY KEY" if value.isPrimary else ""
             
-            # get data type
-            columnType = datatypes[type(value)]
-
             # plop it all together and append to query
-            queryColumns += f"{name} {columnType} {primaryKey}{endingComma}"
+            queryColumns += f"{name} {value.type} {primaryKey}{endingComma}"
+            
+        # register table
+        createdTable = table(
+            name = tableName,
+            columns = list(columns.values()),
+            valueObj = tableObj
+        )
+
+        self.tables[tableName] = createdTable
         
         # execute
         self.__execute(f"CREATE TABLE IF NOT EXISTS {tableName} ({queryColumns})")
         
-    def removeTable(self, tableName: str):
-        self.__execute(f"DROP TABLE {tableName}", True)
+        # return
+        return createdTable
         
-    def insert(self, tableName: str, value: object):
+    def getTable(self, name: str) -> "table":
+        return self.tables.get(name, None)
+        
+    def removeTable(self, table: "table"):
+        self.__execute(f"DROP TABLE {table.name}", True)
+        self.tables.pop(table.name, None)
+        
+    def insert(self, table: "table", value: object):
         # get values
-        objVars, _ = helpers.listClassAttributes(value)
+        objVars = helpers.listClassAttributes(value)
         names, values = self.__getKeysAndValuesOfDict(objVars)
         
         # format stuffs
@@ -137,24 +168,21 @@ class EZSQL():
         namesFormatted = ", ".join(names)
         
         # execute
-        self.__execute(f"INSERT OR IGNORE INTO {tableName} ({namesFormatted}) VALUES ({questionMarks})", True, *values)
+        self.__execute(f"INSERT OR IGNORE INTO {table.name} ({namesFormatted}) VALUES ({questionMarks})", True, *values)
 
-    def get(self, tableName: str, searchParameters: object, fetchHowMany: int = -1) -> list[object]|object:
-        # get values
-        objConstructor = type(searchParameters)
-
+    def get(self, table: "table", searchParameters: object, fetchHowMany: int = -1) -> list[object]|object:
         # format search params into sql query
         whereQuery, values = self.__where(searchParameters)
             
         # execute
-        result = self.__execute(f"SELECT * FROM {tableName} WHERE {whereQuery}", False, *values)
+        result = self.__execute(f"SELECT * FROM {table.name} WHERE {whereQuery}", False, *values)
         
         # return result
         match fetchHowMany:
             # return all
             case -1:
                 all = result.fetchall()
-                return [self.__resultToValue(individual, objConstructor) for individual in all]
+                return [self.__resultToValue(individual, table) for individual in all]
             
             # return one
             case 1:
@@ -163,20 +191,20 @@ class EZSQL():
                 if result is None:
                     return
                 
-                return self.__resultToValue(singular, objConstructor)
+                return self.__resultToValue(singular, table)
             
             # return x
             case _:
                 all = result.fetchmany(fetchHowMany)
-                return [self.__resultToValue(individual, objConstructor) for individual in all]
+                return [self.__resultToValue(individual, table) for individual in all]
             
-    def remove(self, tableName: str, searchParameters: object):
+    def remove(self, table: "table", searchParameters: object):
         # format search params into sql query
         whereQuery, values = self.__where(searchParameters)
         
         # execute
-        self.__execute(f"DELETE FROM {tableName} WHERE {whereQuery}", True, *values)
+        self.__execute(f"DELETE FROM {table.name} WHERE {whereQuery}", True, *values)
         
-    def removeAllValues(self, tableName: str):
+    def removeAllValues(self, table: "table"):
         # execute
-        self.__execute(f"DELETE FROM {tableName}", True)
+        self.__execute(f"DELETE FROM {table.name}", True)
