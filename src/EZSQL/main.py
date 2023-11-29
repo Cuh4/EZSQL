@@ -41,9 +41,7 @@ class EZSQL():
     def __cursor(self):
         return self.database.cursor()
         
-    def __execute(self, query: str, shouldCommit: bool = False, *params: str):
-        print(query, params, sep = " | ")
-        
+    def __execute(self, query: str, shouldCommit: bool = False, *params: str): 
         # get cursor
         cursor = self.__cursor()
         
