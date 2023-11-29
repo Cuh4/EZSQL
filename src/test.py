@@ -4,6 +4,7 @@
 
 # // ---- Imports
 import EZSQL
+import time
 
 # // ---- Main
 # // SQL Table Definitions
@@ -22,7 +23,7 @@ class food:
     
 # // Create Database
 # create db
-database = EZSQL.EZSQL("test.db")
+database = EZSQL.database("test.db")
 
 # create food table
 database.createTable("Food", food)
@@ -31,7 +32,7 @@ database.createTable("Food", food)
 database.insert(
     tableName = "Food", 
 
-    insertValue = food( # since id is the primary key AND its an integer, we don't need to specify it because it will automatically increment
+    value = food( # since id is the primary key AND its an integer, we don't need to specify it because it will automatically increment
         name = "Chicken",
         description = "It's excellent"
     )
@@ -40,7 +41,7 @@ database.insert(
 database.insert(
     tableName = "Food", 
 
-    insertValue = food(
+    value = food(
         id = 2, # if a food of this id already exists in the db, then this will not be added
         name = "Rice",
         description = "h"
@@ -62,3 +63,17 @@ food(
     description = "h"
 )
 """
+
+# remove every value with the name "Chicken" from the database
+database.remove(
+    tableName = "Food",
+    searchParameters =  food(name = "Chicken")
+)
+
+# remove all values after 5 seconds
+time.sleep(5)
+database.removeAllValues("Food")
+
+# remove table after another 5 seconds
+time.sleep(5)
+database.removeTable("Food")
