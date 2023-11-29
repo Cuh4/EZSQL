@@ -34,4 +34,4 @@ setup(
 )
 
 # py setup.py sdist bdist_wheel
-# twine upload dist/*
+# py -m twine upload dist/*
