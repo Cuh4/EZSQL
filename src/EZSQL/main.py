@@ -65,6 +65,42 @@ class EZSQL():
     
     def __resultToValue(self, result: list, value: object) -> object:
         return value(*result)
+    
+    def __where(self, searchParams: object):
+        # get attributes
+        attributes, _ = helpers.listClassAttributes(searchParams)
+        newSearchParams = {}
+        
+        # filter out search params (removing values that are none)
+        for attributeName, attribute in attributes.items():
+            if attribute is None:
+                continue
+            
+            newSearchParams[attributeName] = attribute
+        
+        # construct sql query string (the "WHERE" part)
+        values = []
+        whereQueryPart = "" # "SELECT FROM _ WHERE {fromQueryPart}"
+        count = 0
+        
+        for name, value in searchParams.items():
+            if value is None:
+                continue
+            
+            # increase count
+            count += 1
+            
+            # add "and" after if this is not the last value
+            andPart = " AND " if count < len(newSearchParams) else ""
+            
+            # create "x = y" part
+            whereQueryPart += f"{name} = ?{andPart}"
+            
+            # append value to values list
+            values.append(value)
+            
+        # return sql query and values
+        return whereQueryPart, values
         
     # // main
     def createTable(self, tableName: str, table: object):
@@ -93,6 +129,9 @@ class EZSQL():
         # execute
         self.__execute(f"CREATE TABLE IF NOT EXISTS {tableName} ({queryColumns})")
         
+    def removeTable(self, tableName: str):
+        self.__execute(f"DROP TABLE {tableName}", True)
+        
     def insert(self, tableName: str, obj: object):
         # get values
         objVars, _ = helpers.listClassAttributes(obj)
@@ -107,47 +146,38 @@ class EZSQL():
 
     def get(self, tableName: str, searchParameters: object, fetchHowMany: int = -1) -> list[object]|object:
         # get values
-        objVars, _ = helpers.listClassAttributes(searchParameters)
-        obj = type(searchParameters)
-        values = []
-        
-        # get true length
-        length = 0
+        objConstructor = type(searchParameters)
 
-        for var in objVars.values():
-            if var is not None:
-                length += 1
-        
-        # format stuffs
-        fromQueryPart = "" # "SELECT FROM _ WHERE {fromQueryPart}"
-        count = 0
-        
-        for name, value in objVars.items():
-            if value is None:
-                continue
-            
-            count += 1
-            
-            andPart = " AND " if count < length else ""
-            fromQueryPart += f"{name} = ?{andPart}"
-            
-            values.append(value)
+        # format search params into sql query
+        whereQuery, values = self.__where(searchParameters)
             
         # execute
-        result = self.__execute(f"SELECT * FROM {tableName} WHERE {fromQueryPart}", False, *values)
+        result = self.__execute(f"SELECT * FROM {tableName} WHERE {whereQuery}", False, *values)
         
         # return result
         match fetchHowMany:
             # return all
             case -1:
                 all = result.fetchall()
-                return [self.__resultToValue(individual, obj) for individual in all]
+                return [self.__resultToValue(individual, objConstructor) for individual in all]
             
             # return one
             case 1:
-                return self.__resultToValue(result.fetchone(), obj)
+                singular = result.fetchone()
+                
+                if result is None:
+                    return
+                
+                return self.__resultToValue(singular, objConstructor)
             
             # return x
             case _:
                 all = result.fetchmany(fetchHowMany)
-                return [self.__resultToValue(individual, obj) for individual in all]
+                return [self.__resultToValue(individual, objConstructor) for individual in all]
+            
+    def remove(self, tableName: str, searchParameters: object):
+        # format search params into sql query
+        whereQuery, values = self.__where(searchParameters)
+        
+        # execute
+        self.__execute(f"DELETE OR IGNORE FROM {tableName} WHERE {whereQuery}", True, *values)
