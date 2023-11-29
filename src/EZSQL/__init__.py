@@ -3,4 +3,4 @@
 # // ---------------------------------------------------------------------
 
 # // ---- Imports
-from .main import EZSQL
+from .main import EZSQL as database
