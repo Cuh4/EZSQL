@@ -28,6 +28,7 @@ database = EZSQL.database("test.db")
 # create food table
 database.createTable("Food", food)
 
+# // Modify Database
 # insert food into food table
 database.insert(
     tableName = "Food", 
