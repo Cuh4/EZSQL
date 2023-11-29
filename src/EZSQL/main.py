@@ -178,3 +178,7 @@ class EZSQL():
         
         # execute
         self.__execute(f"DELETE FROM {tableName} WHERE {whereQuery}", True, *values)
+        
+    def removeAllValues(self, tableName: str):
+        # execute
+        self.__execute(f"DELETE FROM {tableName}", True)
