@@ -19,13 +19,36 @@ class dataTypes():
 # // ---- Classes
 # // Table Class
 class table():
-    def __init__(self, name: str, columns: list["table"], valueObj: object):
+    # // setup
+    def __init__(self, name: str, columns: list["table"], valueObj: object, parent: "EZSQL"):
         self.name = name
         self.columns = columns
         self.valueObject = valueObj
+        self.parent = parent
+        
+    # // methods
+    def insert(self, value: object):
+        return self.parent.insert(self, value)
+    
+    def get(self, searchParameters: object, fetchAmount: int = -1):
+        return self.parent.get(self, searchParameters, fetchAmount)
+    
+    def removeTable(self):
+        return self.parent.removeTable(self)
+    
+    def removeValue(self, searchParameters: object):
+        return self.parent.remove(self, searchParameters)
+    
+    def removeAllValues(self):
+        return self.parent.removeAllValues(self)
+    
+    # // magic methods
+    def __del__(self):
+        return self.removeTable()
 
 # // Column Class
 class column():
+    # // setup
     def __init__(self, type: str, default: typing.Any, isPrimary: bool = False):
         self.type = type
         self.default = default
@@ -170,7 +193,7 @@ class EZSQL():
         # execute
         self.__execute(f"INSERT OR IGNORE INTO {table.name} ({namesFormatted}) VALUES ({questionMarks})", True, *values)
 
-    def get(self, table: "table", searchParameters: object, fetchHowMany: int = -1) -> list[object]|object:
+    def get(self, table: "table", searchParameters: object, fetchAmount: int = -1) -> list[object]|object:
         # format search params into sql query
         whereQuery, values = self.__where(searchParameters)
             
@@ -178,7 +201,7 @@ class EZSQL():
         result = self.__execute(f"SELECT * FROM {table.name} WHERE {whereQuery}", False, *values)
         
         # return result
-        match fetchHowMany:
+        match fetchAmount:
             # return all
             case -1:
                 all = result.fetchall()
@@ -195,7 +218,7 @@ class EZSQL():
             
             # return x
             case _:
-                all = result.fetchmany(fetchHowMany)
+                all = result.fetchmany(fetchAmount)
                 return [self.__resultToValue(individual, table) for individual in all]
             
     def remove(self, table: "table", searchParameters: object):
