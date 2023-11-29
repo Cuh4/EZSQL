@@ -166,7 +166,8 @@ class EZSQL():
         createdTable = table(
             name = tableName,
             columns = list(columns.values()),
-            valueObj = tableObj
+            valueObj = tableObj,
+            parent = self
         )
 
         self.tables[tableName] = createdTable
