@@ -36,11 +36,11 @@ class table():
     def removeTable(self):
         return self.parent.removeTable(self)
     
-    def removeValue(self, searchParameters: object):
+    def remove(self, searchParameters: object):
         return self.parent.remove(self, searchParameters)
     
-    def removeAllValues(self):
-        return self.parent.removeAllValues(self)
+    def removeAll(self):
+        return self.parent.removeAll(self)
     
     # // magic methods
     def __del__(self):
@@ -228,6 +228,6 @@ class EZSQL():
         # execute
         self.__execute(f"DELETE FROM {table.name} WHERE {whereQuery}", True, *values)
         
-    def removeAllValues(self, table: "table"):
+    def removeAll(self, table: "table"):
         # execute
         self.__execute(f"DELETE FROM {table.name}", True)
