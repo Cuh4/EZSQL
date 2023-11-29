@@ -1,5 +1,7 @@
 __pycache__/
-src/dist/
+dist/
+build/
+EZSQL.egg-info/
 
 *.db
 *.journal
