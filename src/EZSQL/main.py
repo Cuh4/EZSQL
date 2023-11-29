@@ -33,6 +33,9 @@ class table():
     def get(self, searchParameters: object, fetchAmount: int = -1):
         return self.parent.get(self, searchParameters, fetchAmount)
     
+    def getAll(self):
+        return self.parent.getAll(self)
+    
     def removeTable(self):
         return self.parent.removeTable(self)
     
@@ -220,6 +223,10 @@ class EZSQL():
             case _:
                 all = result.fetchmany(fetchAmount)
                 return [self.__resultToValue(individual, table) for individual in all]
+            
+    def getAll(self, table: "table"):
+        all = self.__execute(f"SELECT * FROM {table.name}").fetchall()
+        return [self.__resultToValue(individual, table) for individual in all]
             
     def remove(self, table: "table", searchParameters: object):
         # format search params into sql query
