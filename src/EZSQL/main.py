@@ -5,6 +5,7 @@
 # // ---- Imports
 import os
 import sqlite3
+import pathlib
 import typing
 
 from . import helpers
@@ -28,6 +29,9 @@ class table():
     # // methods
     def insert(self, value: object):
         return self.parent.insert(self, value)
+    
+    def update(self, searchParameters: object, value: object):
+        return self.parent.update(self, searchParameters, value)
     
     def get(self, searchParameters: object, fetchAmount: int = -1):
         return self.parent.get(self, searchParameters, fetchAmount)
@@ -63,7 +67,10 @@ class EZSQL():
         self.tables: dict[str, "table"] = {}
         
         # make sure path exists
-        os.makedirs(self.folderPath, exist_ok = True)
+        pathlib.Path(self.folderPath).mkdir(
+            parents = True,
+            exist_ok = True
+        )
         
         # create database
         self.database = sqlite3.connect(
@@ -76,6 +83,7 @@ class EZSQL():
         return self.database.cursor()
         
     def __execute(self, query: str, shouldCommit: bool = False, *params: str): 
+        print(query, params, sep = " | ")
         # get cursor
         cursor = self.__cursor()
         
@@ -95,24 +103,28 @@ class EZSQL():
     def __resultToValue(self, result: list, table: "table") -> object:
         return table.valueObject(*result)
     
+    def __removeNone(self, dictToChange: dict):
+        newDict = {}
+        
+        for index, value in dictToChange.items():
+            if value is None:
+                continue
+            
+            newDict[index] = value
+            
+        return newDict
+    
     def __where(self, searchParams: object) -> tuple[str, list[str]]:
         # get attributes
         attributes = helpers.listClassAttributes(searchParams)
-        newSearchParams = {}
-        
-        # filter out search params (removing values that are none)
-        for attributeName, attribute in attributes.items():
-            if attribute is None:
-                continue
-            
-            newSearchParams[attributeName] = attribute
+        attributes = self.__removeNone(attributes)
         
         # construct sql query string (the "WHERE" part)
         values = []
         whereQueryPart = "" # "SELECT FROM _ WHERE {fromQueryPart}"
         count = 0
         
-        for name, value in newSearchParams.items():
+        for name, value in attributes.items():
             if value is None:
                 continue
             
@@ -120,7 +132,7 @@ class EZSQL():
             count += 1
             
             # add "and" after if this is not the last value
-            andPart = " AND " if count < len(newSearchParams) else ""
+            andPart = " AND " if count < len(attributes) else ""
             
             # create "x = y" part
             whereQueryPart += f"{name} = ?{andPart}"
@@ -130,6 +142,9 @@ class EZSQL():
             
         # return sql query and values
         return whereQueryPart, values
+    
+    def __questionMarks(self, values: list):
+        return ", ".join(list("?" * len(values)))
         
     # // main
     def createTable(self, tableName: str, tableObj: object) -> "table":
@@ -181,11 +196,31 @@ class EZSQL():
         names, values = self.__getKeysAndValuesOfDict(objVars)
         
         # format stuffs
-        questionMarks = ", ".join(list("?" * len(objVars)))
+        questionMarks = self.__questionMarks(objVars)
         namesFormatted = ", ".join(names)
         
         # execute
         self.__execute(f"INSERT OR IGNORE INTO {table.name} ({namesFormatted}) VALUES ({questionMarks})", True, *values)
+        
+    def update(self, table: "table", searchParameters: object, value: object):
+        # format search params into sql query
+        whereQuery, whereValues = self.__where(searchParameters)
+        
+        # format set part
+        valueVars = helpers.listClassAttributes(value)
+        values = []
+        
+        # format little bits and bobs
+        toAdd = []
+        
+        for column, value in self.__removeNone(valueVars).items():
+            values.append(value)
+            toAdd.append(f"{column} = ?")
+            
+        toAddString = ", ".join(toAdd)
+            
+        # execute
+        self.__execute(f"UPDATE {table.name} SET {toAddString} WHERE {whereQuery}", True, *(values + whereValues))
 
     def get(self, table: "table", searchParameters: object, fetchAmount: int = -1) -> list[object]|object:
         # format search params into sql query
