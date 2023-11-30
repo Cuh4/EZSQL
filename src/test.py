@@ -59,9 +59,15 @@ foodTable.insert(
     )
 )
 
+# update something
+foodTable.update(
+    searchParameters = food(name = "Rice"), # find instances of records with the description "hey"
+    value = food(description = "hey"), # change the description to "hey"
+)
+
 # retrieve something from the db
 foods: list[food] = foodTable.get(
-    searchParameters = food(name = "Rice", description = "h"), # search for food with the name "Rice" and description "h"
+    searchParameters = food(name = "Rice", description = "hey"), # search for food with the name "Rice" and description "h"
     fetchAmount = -1 # -1 = get all results, 1 = get a singular result (not in a list), 2+ = get x results (in a list)
 )
 
