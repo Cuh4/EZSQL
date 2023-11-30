@@ -63,7 +63,7 @@ class EZSQL():
         self.tables: dict[str, "table"] = {}
         
         # make sure path exists
-        os.mkdir(self.folderPath)
+        os.makedirs(self.folderPath, exist_ok = True)
         
         # create database
         self.database = sqlite3.connect(
