@@ -62,7 +62,7 @@ foodTable.insert(
 # update something
 foodTable.update(
     searchParameters = food(name = "Rice"), # find instances of records with the description "hey"
-    value = food(description = "hey"), # change the description to "hey"
+    value = food(name = "Curry", description = "hey"), # change the description to "hey", and name to "Curry"
 )
 
 # retrieve something from the db
