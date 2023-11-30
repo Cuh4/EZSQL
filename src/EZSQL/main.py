@@ -5,7 +5,6 @@
 # // ---- Imports
 import os
 import sqlite3
-import pathlib
 import typing
 
 from . import helpers
@@ -64,10 +63,7 @@ class EZSQL():
         self.tables: dict[str, "table"] = {}
         
         # make sure path exists
-        pathlib.Path(self.folderPath).mkdir(
-            parents = True,
-            exist_ok = True
-        )
+        os.mkdir(self.folderPath)
         
         # create database
         self.database = sqlite3.connect(
